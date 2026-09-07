@@ -8,7 +8,6 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            /* Пробуем загрузить картинку tatwole.jpg */
             background: #111111 url('tatwole.jpg') no-repeat center center;
             background-size: cover;
             display: flex;
@@ -27,26 +26,31 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
             width: 90%;
             max-width: 320px;
+            position: relative;
         }
+        /* Заменили input на div для 100% совместимости с Telegram */
         #display {
             width: 100%;
             height: 65px;
-            /* Жёстко задаем белый фон и черный текст, чтобы цифры всегда было видно! */
             background-color: #ffffff !important;
             color: #000000 !important;
-            border: none;
             border-radius: 12px;
             font-size: 32px;
             font-weight: bold;
-            text-align: right;
-            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 15px;
             box-sizing: border-box;
             margin-bottom: 20px;
+            overflow-x: auto;
+            white-space: nowrap;
         }
         .buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
+            margin-bottom: 15px;
         }
         button {
             padding: 18px;
@@ -71,13 +75,24 @@
             background: rgba(231, 76, 60, 0.75);
             color: white;
         }
+        /* Твоя фирменная надпись снизу калькулятора */
+        .signature {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            font-style: italic;
+            letter-spacing: 1px;
+            margin-top: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
     </style>
 </head>
 <body>
 
 <div class="calculator">
-    <!-- Поле ввода с гарантированной видимостью -->
-    <input type="text" id="display" readonly placeholder="0">
+    <!-- Новый экран, который железно будет выводить текст -->
+    <div id="display">0</div>
+    
     <div class="buttons">
         <button class="clear" onclick="clearDisplay()">C</button>
         <button onclick="appendValue('/')" class="operator">/</button>
@@ -101,6 +116,9 @@
         <button onclick="appendValue('0')" style="grid-column: span 2;">0</button>
         <button onclick="appendValue('.')">.</button>
     </div>
+    
+    <!-- Авторский вотермарк -->
+    <div class="signature">by Flord</div>
 </div>
 
 <script>
@@ -108,32 +126,41 @@
     tg.expand();
 
     const display = document.getElementById('display');
+    let isNewCalculation = false;
 
     function appendValue(val) {
-        display.value += val;
-        // Прокручиваем экран вправо, если цифр слишком много
+        // Если на экране дефолтный 0 или прошлая ошибка — стираем их перед вводом новой цифры
+        if (display.innerText === '0' || display.innerText === 'Ошибка' || isNewCalculation) {
+            if (!isNaN(val) || val === '.') {
+                display.innerText = '';
+            }
+            isNewCalculation = false;
+        }
+        display.innerText += val;
+        // Автоматически прокручиваем экран вправо при длинном примере
         display.scrollLeft = display.scrollWidth;
     }
 
     function clearDisplay() {
-        display.value = '';
+        display.innerText = '0';
     }
 
     function calculateResult() {
         try {
-            const expression = display.value;
-            if (!expression) return;
+            const expression = display.innerText;
+            if (!expression || expression === '0') return;
             
             const formattedExpression = expression.replace(/[^0-9+\-*/.]/g, '');
             const result = new Function(`return ${formattedExpression}`)();
             
             if (result === Infinity || isNaN(result)) {
-                display.value = 'Ошибка';
+                display.innerText = 'Ошибка';
             } else {
-                display.value = Number(result.toFixed(4));
+                display.innerText = Number(result.toFixed(4));
+                isNewCalculation = true; // Помечаем, что расчёт окончен
             }
         } catch (error) {
-            display.value = 'Ошибка';
+            display.innerText = 'Ошибка';
         }
     }
 </script>
